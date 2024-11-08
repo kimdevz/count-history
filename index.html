@@ -1,1 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Counter with Tailwind</title>
+    <!-- Include Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 h-screen pt-6 pl-[310px] flex items-start space-x-8">
+
+    <!-- Fixed Counter Input (Section 1) -->
+    <div class="fixed top-6 left-6 bg-white p-6 rounded-lg shadow-lg z-10 flex flex-col items-center justify-center">
+        <input type="number" id="input-counter" class="text-6xl font-bold text-gray-800 bg-yellow-200 p-6 rounded-lg w-56 text-center mb-8" value="0">
+        <div class="flex justify-center gap-8">
+            <button class="text-4xl text-white bg-green-500 hover:bg-green-600 active:bg-green-700 p-4 rounded-full w-16 h-16" onclick="incrementCounter()">+</button>
+            <button class="text-4xl text-white bg-red-500 hover:bg-red-600 active:bg-red-700 p-4 rounded-full w-16 h-16" onclick="decrementCounter()">-</button>
+            <button class="text-4xl text-white bg-blue-500 hover:bg-blue-600 active:bg-blue-700 p-4 rounded-full w-16 h-16" onclick="saveCounter()">💾</button>
+        </div>
+    </div>
+
+    <!-- Main Content Container with Left Margin to Avoid Overlap -->
+    <div class="flex gap-8 w-full">
+
+        <!-- Counter History Section (Section 2) -->
+        <div class="bg-white p-6 rounded-lg shadow-lg w-full mt-0">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Counter History</h2>
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="p-2 border">Timestamp</th>
+                        <th class="p-2 border">Value</th>
+                        <th class="p-2 border">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="counter-history"></tbody>
+            </table>
+        </div>
+
+        <!-- Action Log Section (Section 3) -->
+        <div class="bg-white p-6 rounded-lg shadow-lg w-full mt-0">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Action Log (Last 3 minutes)</h2>
+            <table class="w-full border-collapse">
+                <thead>
+                    <tr class="bg-gray-200">
+                        <th class="p-2 border">Timestamp</th>
+                        <th class="p-2 border">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="action-log"></tbody>
+            </table>
+            <div id="pagination-controls" class="mt-4 flex justify-center"></div>
+        </div>
+    </div>
+
+    <!-- JavaScript for counter logic and history -->
+    <script>
+        // Get the input element
+        const inputCounter = document.getElementById('input-counter');
+        // Get the elements to display the counter history and action log
+        const counterHistory = document.getElementById('counter-history');
+        const actionLog = document.getElementById('action-log');
+
+        // Array to store the counter history
+        let counterData = [];
+        // Array to store the action log
+        let actionLogData = [];
+
+        // Function to log an action
+        function logAction(action) {
+            const timestamp = new Date().toLocaleString();
+            actionLogData.push({ timestamp, action });
+            // Remove entries older than 3 minutes
+            const now = new Date().getTime();
+            actionLogData = actionLogData.filter(entry => {
+                const entryTime = new Date(entry.timestamp).getTime();
+                return now - entryTime < 3 * 60 * 1000; // 3 minutes in milliseconds
+            });
+            localStorage.setItem('actionLogData', JSON.stringify(actionLogData));
+            renderActionLog();
+        }
+
+        // Function to render the action log
+        function renderActionLog() {
+            actionLog.innerHTML = '';
+            actionLogData.forEach(({ timestamp, action }) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="p-2 border">${timestamp}</td>
+                    <td class="p-2 border">${action}</td>
+                `;
+                actionLog.appendChild(row);
+            });
+        }
+
+        // Function to increment the counter value
+        function incrementCounter() {
+            let currentValue = parseInt(inputCounter.value);
+            inputCounter.value = currentValue + 1;
+            saveCounter();
+            logAction('Incremented counter');
+        }
+
+        // Function to decrement the counter value
+        function decrementCounter() {
+            let currentValue = parseInt(inputCounter.value);
+            inputCounter.value = currentValue - 1;
+            saveCounter();
+            logAction('Decremented counter');
+        }
+
+        // Function to save the current counter value
+        function saveCounter() {
+            const currentValue = parseInt(inputCounter.value);
+            const timestamp = new Date().toLocaleString();
+            counterData.push({ timestamp, value: currentValue });
+            localStorage.setItem('counterData', JSON.stringify(counterData));
+            renderCounterHistory();
+            logAction('Saved counter value');
+        }
+
+        // Function to delete a record from the counter history
+        function deleteRecord(index) {
+            counterData.splice(index, 1);
+            localStorage.setItem('counterData', JSON.stringify(counterData));
+            renderCounterHistory();
+            logAction('Deleted counter record');
+        }
+
+        // Function to edit a record in the counter history
+        function editRecord(index) {
+            const record = counterData[index];
+            const newValue = parseInt(prompt('Enter the new value:', record.value));
+            if (!isNaN(newValue)) {
+                record.value = newValue;
+                counterData[index] = record;
+                localStorage.setItem('counterData', JSON.stringify(counterData));
+                renderCounterHistory();
+                logAction('Edited counter record');
+            }
+        }
+
+        // Function to render the counter history
+        function renderCounterHistory() {
+            counterHistory.innerHTML = '';
+            counterData.forEach(({ timestamp, value }, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="p-2 border">${timestamp}</td>
+                    <td class="p-2 border">${value}</td>
+                    <td class="p-2 border">-</td>
+                    <td class="p-2 border">
+                        <button class="text-white bg-red-500 hover:bg-red-600 active:bg-red-700 p-2 rounded-full" onclick="deleteRecord(${index})">🗑️</button>
+                        <button class="text-white bg-yellow-500 hover:bg-yellow-600 active:bg-yellow-700 p-2 rounded-full" onclick="editRecord(${index})">✏️</button>
+                    </td>
+                `;
+                counterHistory.appendChild(row);
+            });
+        }
+
+        // Load the counter history and action log on page load
+        window.onload = function() {
+            const savedCounterData = localStorage.getItem('counterData');
+            const savedActionLogData = localStorage.getItem('actionLogData');
+            if (savedCounterData) {
+                counterData = JSON.parse(savedCounterData);
+                renderCounterHistory();
+            }
+            if (savedActionLogData) {
+                actionLogData = JSON.parse(savedActionLogData);
+                // Remove entries older than 3 minutes
+                const now = new Date().getTime();
+                actionLogData = actionLogData.filter(entry => {
+                    const entryTime = new Date(entry.timestamp).getTime();
+                    return now - entryTime < 3 * 60 * 1000; // 3 minutes in milliseconds
+                });
+                localStorage.setItem('actionLogData', JSON.stringify(actionLogData));
+                renderActionLog();
+            }
+        };
+    </script>
+</body>
+</html>
 
