@@ -61,10 +61,9 @@
         const counterHistory = document.getElementById('counter-history');
         const actionLog = document.getElementById('action-log');
 
-        // Array to store the counter history
-        let counterData = [];
-        // Array to store the action log
-        let actionLogData = [];
+        // Initialize counter history and action log from localStorage or empty array
+        let counterData = JSON.parse(localStorage.getItem('counterData')) || [];
+        let actionLogData = JSON.parse(localStorage.getItem('actionLogData')) || [];
 
         // Function to log an action
         function logAction(action) {
@@ -77,6 +76,8 @@
                 return now - entryTime < 3 * 60 * 1000; // 3 minutes in milliseconds
             });
             renderActionLog();
+            // Save the action log to localStorage
+            localStorage.setItem('actionLogData', JSON.stringify(actionLogData));
         }
 
         // Function to render the action log
@@ -115,6 +116,8 @@
             counterData.push({ timestamp, value: currentValue });
             renderCounterHistory();
             logAction('Saved counter value');
+            // Save the counter history to localStorage
+            localStorage.setItem('counterData', JSON.stringify(counterData));
         }
 
         // Function to delete a record from the counter history
@@ -122,6 +125,8 @@
             counterData.splice(index, 1);
             renderCounterHistory();
             logAction('Deleted counter record');
+            // Update the counter history in localStorage
+            localStorage.setItem('counterData', JSON.stringify(counterData));
         }
 
         // Function to edit a record in the counter history
@@ -133,6 +138,8 @@
                 counterData[index] = record;
                 renderCounterHistory();
                 logAction('Edited counter record');
+                // Update the counter history in localStorage
+                localStorage.setItem('counterData', JSON.stringify(counterData));
             }
         }
 
@@ -154,7 +161,7 @@
             });
         }
 
-        // Load the counter history and action log on page load (without localStorage)
+        // Load the counter history and action log on page load (using localStorage)
         window.onload = function() {
             renderCounterHistory();
             renderActionLog();
